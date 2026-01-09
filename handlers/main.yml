@@ -13,7 +13,7 @@
 - name: Enable gitlab service
   ansible.builtin.systemd:
     state: started
-    enabled: yes
-    masked: no
-    daemon_reload: yes
+    enabled: true
+    masked: false
+    daemon_reload: true
     name: gitlab-runsvdir
