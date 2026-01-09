@@ -2,6 +2,7 @@
 
 - name: Reconfigure gitlab
   ansible.builtin.shell: |
+    set -o pipefail
     gitlab-ctl deploy-page up
     gitlab-ctl backup-etc
     gitlab-ctl start
@@ -9,6 +10,7 @@
     ( cat /etc/gitlab/gitlab.rb | grep "letsencrypt" | sed 's/\ //g' | grep "\['enable'\]=true" > /dev/null 2> /dev/null ) && gitlab-ctl renew-le-certs || true
     gitlab-ctl deploy-page down
   notify: Enable gitlab service
+  changed_when: true
 
 - name: Enable gitlab service
   ansible.builtin.systemd:
