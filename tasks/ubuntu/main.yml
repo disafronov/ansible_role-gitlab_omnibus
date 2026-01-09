@@ -2,7 +2,7 @@
 
 - name: Install a list of packages
   ansible.builtin.apt:
-    update_cache: yes
+    update_cache: true
     state: present
     pkg:
     - curl
@@ -15,7 +15,7 @@
 
 - name: Install Debian archive keyring
   ansible.builtin.apt:
-    update_cache: yes
+    update_cache: true
     state: present
     pkg:
     - debian-archive-keyring
@@ -35,7 +35,7 @@
 
 - name: Install gitlab-ce
   ansible.builtin.apt:
-    update_cache: yes
+    update_cache: true
     state: present
     pkg:
     - gitlab-ce
@@ -56,7 +56,7 @@
     owner: root
     group: root
     mode: '0640'
-    backup: yes
+    backup: true
   register: gitlab_config
   notify: Reconfigure gitlab
 
