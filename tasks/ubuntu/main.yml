@@ -1,0 +1,84 @@
+---
+
+- name: Install a list of packages
+  ansible.builtin.apt:
+    update_cache: yes
+    state: present
+    pkg:
+    - curl
+    - openssh-server
+    - ca-certificates
+    - tzdata
+    - perl
+    - gnupg
+    - apt-transport-https
+
+- name: Install Debian archive keyring
+  ansible.builtin.apt:
+    update_cache: yes
+    state: present
+    pkg:
+    - debian-archive-keyring
+  when: ansible_distribution == 'Debian'
+
+- name: Add an Apt signing key, uses whichever key is at the URL
+  ansible.builtin.apt_key:
+    url: https://packages.gitlab.com/gitlab/gitlab-ce/gpgkey
+    state: present
+    keyring: /etc/apt/keyrings/gitlab_gitlab-ce.gpg
+
+- name: Add specified repository into sources list
+  ansible.builtin.apt_repository:
+    repo: deb [signed-by=/etc/apt/keyrings/gitlab_gitlab-ce.gpg] https://packages.gitlab.com/gitlab/gitlab-ce/{{ ansible_distribution | lower }}/ {{ ansible_distribution_release | lower }} main
+    filename: gitlab_gitlab-ce
+    state: present
+
+- name: Install gitlab-ce
+  ansible.builtin.apt:
+    update_cache: yes
+    state: present
+    pkg:
+    - gitlab-ce
+
+- name: Create a directory for config backups
+  ansible.builtin.file:
+    path: "/opt/gitlab.rb"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Override gitlab config
+  ansible.builtin.copy:
+    content: |
+      {{ gitlab_config }}
+    dest: "/etc/gitlab/gitlab.rb"
+    owner: root
+    group: root
+    mode: '0640'
+    backup: yes
+  register: gitlab_config
+  notify: Reconfigure gitlab
+
+- name: Backup operations
+  when: gitlab_config.changed and gitlab_config.backup_file is defined
+  block:
+  - name: Backup previous gitlab config
+    ansible.builtin.copy:
+      dest: "/opt/gitlab.rb"
+      src: "{{ gitlab_config.backup_file }}"
+      remote_src: true
+  - name: Remove backup file from gitlab config dir
+    ansible.builtin.file:
+      path: "{{ gitlab_config.backup_file }}"
+      state: absent
+
+- name: Gitlab backup setup
+  ansible.builtin.copy:
+    content: |
+      {{ gitlab_backup_cron }} root gitlab-backup create CRON=1 {{ gitlab_backup_options | default(omit) }}
+    dest: "/etc/cron.d/gitlab-backup"
+    owner: root
+    group: root
+    mode: '0640'
+  when: gitlab_backup_cron is defined

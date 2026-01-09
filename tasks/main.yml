@@ -1,0 +1,7 @@
+---
+
+# Ubuntu
+- name: Perform specific setup for Ubuntu, Debian & Linux Mint
+  include_tasks: ubuntu/main.yml
+  when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian' or ansible_distribution == 'Linux Mint'
+  tags: ubuntu
