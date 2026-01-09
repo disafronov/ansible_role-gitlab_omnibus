@@ -2,12 +2,15 @@
 
 - name: Reconfigure gitlab
   ansible.builtin.shell: |
-    set -o pipefail
-    gitlab-ctl deploy-page up
-    gitlab-ctl backup-etc
-    gitlab-ctl start
-    gitlab-ctl reconfigure > /dev/null 2> /dev/null && echo "Reconfiguration successful! :-)" || echo "Reconfiguration failed! :-("
-    ( cat /etc/gitlab/gitlab.rb | grep "letsencrypt" | sed 's/\ //g' | grep "\['enable'\]=true" > /dev/null 2> /dev/null ) && gitlab-ctl renew-le-certs || true
+    gitlab-ctl deploy-page up || exit 1
+    gitlab-ctl backup-etc || exit 1
+    gitlab-ctl start || exit 1
+    gitlab-ctl reconfigure > /dev/null 2> /dev/null \
+      && echo "Reconfiguration successful! :-)" \
+      || echo "Reconfiguration failed! :-("
+    if grep -q "letsencrypt\['enable'\] *= *true" /etc/gitlab/gitlab.rb; then
+      gitlab-ctl renew-le-certs
+    fi
     gitlab-ctl deploy-page down
   notify: Enable gitlab service
   changed_when: true
